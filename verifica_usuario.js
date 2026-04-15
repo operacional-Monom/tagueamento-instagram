@@ -74,7 +74,7 @@ async function verificarConta(browser, nomeConta, alvoPrincipal, nomeArquivoRela
         console.log(textoErro);
         fs.appendFileSync(nomeArquivoRelatorio, textoErro + "\n");
     } finally {
-        await page.close().catch(() => {});
+        await page.close().catch(() => { });
     }
 }
 
