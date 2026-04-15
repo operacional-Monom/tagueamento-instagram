@@ -1,0 +1,16 @@
+# Dependências
+node_modules/
+
+# Sessão salva do Instagram (cookies/login)
+insta_session/
+
+# Credenciais Google (NUNCA subir isso!)
+credentials.json
+
+# Resultados gerados automaticamente
+resultado_reginaldo.txt
+resultado_classificacao.txt
+resultado.txt
+
+# Logs
+*.log
