@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acompanhamento Político</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap');
+        
+        :root {
+            --bg-color: #0f1016;
+            --surface-color: #1a1c23;
+            --primary: #f59e0b;
+            --primary-hover: #d97706;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-image: radial-gradient(circle at top, #1a1c23 0%, var(--bg-color) 70%);
+            padding: 2rem;
+        }
+
+        .container {
+            background-color: var(--surface-color);
+            padding: 2.5rem;
+            border-radius: 1rem;
+            width: 100%;
+            max-width: 700px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #ef4444, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .progress-indicator {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--text-muted);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        th {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        tr:hover {
+            background-color: rgba(255,255,255,0.02);
+        }
+
+        .badge {
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .b-direita { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .b-esquerda { background-color: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .b-indefinido { background-color: rgba(148, 163, 184, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
+        .b-erro { background-color: rgba(255, 255, 255, 0.1); color: #f8fafc; border: 1px solid rgba(255, 255, 255, 0.2); }
+
+        .acoes {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        button {
+            flex: 1;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+        .btn-outline { background-color: transparent; color: var(--primary); border: 1px solid var(--primary); }
+        .btn-outline:hover { background-color: rgba(245, 158, 11, 0.1); }
+
+        .loader {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .skeleton {
+            width: 100%;
+            height: 40px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 5px;
+            margin-bottom: 10px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="status-header">
+            <div>
+                <h1>Resultados Políticos</h1>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.2rem;" id="jobIdText">Protocolo: Carregando...</p>
+            </div>
+            <div class="progress-indicator" id="progressStatus">
+                <span class="loader"></span> Buscando dados
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Conta Verificada</th>
+                    <th>Classificação</th>
+                </tr>
+            </thead>
+            <tbody id="listaResultados">
+                <tr><td colspan="2"><div class="skeleton"></div></td></tr>
+                <tr><td colspan="2"><div class="skeleton"></div></td></tr>
+            </tbody>
+        </table>
+
+        <div class="acoes" style="display: none;" id="botoesTabela">
+            <button class="btn-outline" onclick="copiarApenasClassificacoes()">Copiar Coluna (Classificações)</button>
+            <button class="btn-primary" onclick="copiarTudo()">Copiar Tabela Inteira (Excel)</button>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const jobId = urlParams.get('id');
+
+        const jobIdText = document.getElementById('jobIdText');
+        const progressStatus = document.getElementById('progressStatus');
+        const listaResultados = document.getElementById('listaResultados');
+        const botoesTabela = document.getElementById('botoesTabela');
+
+        let intervalCheck = null;
+        let jobAtual = null;
+
+        if (!jobId) {
+            jobIdText.innerText = "Erro: Nenhum ID fornecido.";
+            progressStatus.innerText = "Parado";
+            listaResultados.innerHTML = "<tr><td colspan='2'>Volte na tela anterior.</td></tr>";
+        } else {
+            jobIdText.innerText = `Protocolo: ${jobId}`;
+            iniciarAcompanhamento();
+        }
+
+        function iniciarAcompanhamento() {
+            intervalCheck = setInterval(checarStatus, 3000);
+            checarStatus(); 
+        }
+
+        async function checarStatus() {
+            try {
+                // USA A PORTA DO NOVO SERVIDOR (3001)
+                const response = await fetch(`http://localhost:3001/api/status-politica/${jobId}`);
+                if (!response.ok) return;
+
+                jobAtual = await response.json();
+                renderizarTabela(jobAtual);
+
+                if (jobAtual.status === "CONCLUIDO") {
+                    clearInterval(intervalCheck);
+                    progressStatus.style.color = "var(--success)";
+                    progressStatus.innerText = `✅ Concluído (${jobAtual.totalContas}/${jobAtual.totalContas})`;
+                    botoesTabela.style.display = "flex";
+                } else if (jobAtual.status === "ERRO_INTERNO") {
+                    clearInterval(intervalCheck);
+                    progressStatus.style.color = "var(--error)";
+                    progressStatus.innerText = `❌ Falha na Execução`;
+                } else {
+                    progressStatus.innerHTML = `<span class="loader"></span> Processando (${jobAtual.progresso}/${jobAtual.totalContas})`;
+                }
+
+            } catch (error) {
+                console.log("Aguardando servidor 3001...");
+            }
+        }
+
+        function parseResultado(textoCru) {
+            const regex = /\[(.*?)\] (.*)/;
+            const match = textoCru.match(regex);
+            if (match) {
+                return { class: match[1].trim(), user: match[2].trim() };
+            }
+            return { class: "DESCONHECIDO", user: textoCru };
+        }
+
+        function getBadgeClass(classif) {
+            if (classif === "DIREITA") return "b-direita";
+            if (classif === "ESQUERDA") return "b-esquerda";
+            if (classif === "INDEFINIDO") return "b-indefinido";
+            return "b-erro";
+        }
+
+        function renderizarTabela(job) {
+            if (!job.resultados || job.resultados.length === 0) {
+                if (job.status === "PROCESSANDO" && job.progresso === 0) {
+                    listaResultados.innerHTML = `<tr><td colspan="2" style="text-align:center; color: #94a3b8;"><span class="loader"></span> O robô está interagindo... isso é mais demorado!</td></tr>`;
+                }
+                return;
+            }
+
+            listaResultados.innerHTML = "";
+            let html = "";
+            job.resultados.forEach(resCru => {
+                const item = parseResultado(resCru);
+                html += `
+                    <tr>
+                        <td style="font-weight: 500;">${item.user}</td>
+                        <td><span class="badge ${getBadgeClass(item.class)}">${item.class}</span></td>
+                    </tr>
+                `;
+            });
+            listaResultados.innerHTML = html;
+        }
+
+        function copiarApenasClassificacoes() {
+            if (!jobAtual || !jobAtual.resultados) return;
+            const classificacoes = jobAtual.resultados.map(resCru => {
+                const item = parseResultado(resCru);
+                return item.class;
+            }).join("\n");
+
+            navigator.clipboard.writeText(classificacoes);
+            alert("Coluna de Classificações copiada! Pode colar no Excel.");
+        }
+
+        function copiarTudo() {
+            if (!jobAtual || !jobAtual.resultados) return;
+            const tabelaCompleta = jobAtual.resultados.map(resCru => {
+                const item = parseResultado(resCru);
+                return `${item.user}\t${item.class}`;
+            }).join("\n");
+
+            navigator.clipboard.writeText(tabelaCompleta);
+            alert("Tabela completa copiada! Cole no Excel (1ª Coluna: Perfil / 2ª: Classificação)");
+        }
+
+    </script>
+</body>
+</html>

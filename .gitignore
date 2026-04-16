@@ -14,3 +14,6 @@ resultado.txt
 
 # Logs
 *.log
+
+# APIs Jobs
+jobs/
