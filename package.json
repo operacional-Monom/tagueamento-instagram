@@ -2,19 +2,33 @@
   "name": "tagueamento",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
+  "bin": "server.js",
+  "pkg": {
+    "assets": [
+      "*.html",
+      "projeto-classificador/*.html"
+    ],
+    "targets": [
+      "node18-win-x64"
+    ]
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "pkg ."
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "puppeteer": "^24.40.0",
     "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
   }
 }
+

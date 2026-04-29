@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { processarVerificacoesApi } = require('./motor_classificador');
@@ -9,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const JOBS_DIR = path.join(__dirname, 'jobs');
+const JOBS_DIR = path.join(process.cwd(), 'jobs');
 
 if (!fs.existsSync(JOBS_DIR)) {
     fs.mkdirSync(JOBS_DIR);
@@ -48,7 +48,7 @@ app.post('/api/classificar', (req, res) => {
 
     contas = contas.map(extrairUsuario).filter(c => c);
 
-    const jobId = uuidv4();
+    const jobId = crypto.randomUUID();
     const contasCount = contas.length;
     // Mais demorado pois ele avalia múltiplos alvos para CADA conta!
     const tempoEstimadoSegundos = Math.ceil(contasCount / 2) * 20; 

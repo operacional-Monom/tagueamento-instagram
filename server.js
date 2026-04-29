@@ -1,15 +1,63 @@
 const express = require('express');
 const cors = require('cors');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const puppeteer = require('puppeteer');
 const { processarVerificacoesApi } = require('./verificador');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static(__dirname)); // <-- Serve os HTMLs para o navegador
 
-const JOBS_DIR = path.join(__dirname, 'jobs');
+const JOBS_DIR = path.join(process.cwd(), 'jobs');
+
+// =========================================================
+// Busca Caminho do Navegador (Chrome / Edge)
+// =========================================================
+function getChromePath() {
+    const commonPaths = [
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+        'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
+    ];
+    for (const p of commonPaths) {
+        if (fs.existsSync(p)) return p;
+    }
+    return undefined;
+}
+
+// =========================================================
+// Rota de Login Manual
+// =========================================================
+app.get('/api/login', async (req, res) => {
+    try {
+        const customPath = getChromePath();
+        const launchOptions = {
+            headless: false, // ABRE A TELA PRA PESSOA LOGAR
+            defaultViewport: null,
+            userDataDir: path.join(process.cwd(), 'insta_session'), 
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        };
+
+        if (customPath) launchOptions.executablePath = customPath;
+
+        const browser = await puppeteer.launch(launchOptions);
+        const page = await browser.newPage();
+        await page.goto('https://www.instagram.com/');
+        res.json({ mensagem: "Navegador aberto! Faça login e feche a aba." });
+        
+        // Fica observando o navegador, quando o usuário fechar o puppeteer limpa o processo
+        browser.on('disconnected', () => {
+            console.log("Tela de login fechada.");
+        });
+
+    } catch (e) {
+        res.status(500).json({ erro: e.message });
+    }
+});
 
 // Cria pasta temporária de jobs caso não exista
 if (!fs.existsSync(JOBS_DIR)) {
@@ -50,7 +98,7 @@ function extrairUsuario(texto) {
 // Rota Principal: Iniciar Análise Assíncrona
 // =========================================================
 app.post('/api/iniciar', (req, res) => {
-    let { contas, alvo } = req.body;
+    let { contas, alvo, tipoAnalise, apiKey } = req.body;
 
     if (!contas || !Array.isArray(contas) || contas.length === 0) {
         return res.status(400).json({ erro: "Lista de contas não enviada ou inválida." });
@@ -60,18 +108,21 @@ app.post('/api/iniciar', (req, res) => {
         return res.status(400).json({ erro: "Alvo da verificação não enviado." });
     }
 
-    // Limpa alvo e contas caso venham com link
+    // Limpa alvo e contas (mantém a exata quantidade de linhas mesmo se vazias ou com erro)
     alvo = extrairUsuario(alvo);
-    contas = contas.map(extrairUsuario).filter(c => c);
+    contas = contas.map(c => {
+        let extr = extrairUsuario(c);
+        if (!extr) return c; // Se nao conseguir extrair (ex: linha vazia), retorna o próprio valor original
+        return extr;
+    });
 
-    const jobId = uuidv4();
+    const jobId = crypto.randomUUID();
     
     // Calcula o tempo estimado: 
-    // Com concorrência 2 e delays do Puppeteer: média de ~6 segundos por conta (na pior das hipóteses 8s)
     const contasCount = contas.length;
-    // Como são 2 por vez: num_ciclos * tempo_por_ciclo
-    const mediaPorCicloSegundos = 10;
-    const tempoEstimadoSegundos = Math.ceil(contasCount / 2) * mediaPorCicloSegundos;
+    // Otimização: processa 6 contas em paralelo numa única aba por conta
+    const mediaPorCicloSegundos = 18; 
+    const tempoEstimadoSegundos = Math.ceil(contasCount / 6) * mediaPorCicloSegundos;
 
     // Estado inicial
     const jobInicial = {
@@ -98,11 +149,11 @@ app.post('/api/iniciar', (req, res) => {
     });
 
     // Roda em background! (Sem o await travando a rota)
-    processarVerificacoesApi(contas, alvo, jobId, (resultadosParciais) => {
+    processarVerificacoesApi(contas, alvo, tipoAnalise, jobId, apiKey, (resultadosCompletos, concluidos) => {
         // Callback de atualização - Atualiza o JSON local enquanto o job ainda tá rodando
         const jobAtual = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-        jobAtual.resultados = resultadosParciais;
-        jobAtual.progresso = resultadosParciais.length;
+        jobAtual.resultados = resultadosCompletos;
+        jobAtual.progresso = concluidos;
         fs.writeFileSync(filePath, JSON.stringify(jobAtual, null, 2));
     }).then((resultadosEstaveis) => {
         // Concluído!
@@ -128,7 +179,22 @@ app.post('/api/iniciar', (req, res) => {
 // =========================================================
 const PORT = 3000;
 app.listen(PORT, () => {
-    console.log(`🚀 Servidor rodando na porta ${PORT}`);
+    console.log(`🚀 Servidor Principal rodando na porta ${PORT}`);
     console.log(`📌 Rota POST /api/iniciar configurada`);
     console.log(`📌 Rota GET /api/status/:id configurada`);
+
+    // Iniciar o servidor do classificador também
+    try {
+        require('./projeto-classificador/server.js');
+    } catch(e) {
+        console.error("Erro ao iniciar servidor secundario:", e.message);
+    }
+
+    // Abrir navegador automaticamente
+    const { exec } = require('child_process');
+    console.log("Abrindo navegador em http://localhost:3000 ...");
+    setTimeout(() => {
+        exec('start http://localhost:3000/index.html');
+    }, 1500); 
 });
+

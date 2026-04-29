@@ -38,10 +38,10 @@
 
         .container {
             background-color: var(--surface-color);
-            padding: 2.5rem;
+            padding: 2rem 1.5rem;
             border-radius: 1rem;
             width: 100%;
-            max-width: 700px;
+            max-width: 1000px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.5);
             border: 1px solid rgba(255,255,255,0.05);
         }
@@ -77,13 +77,24 @@
 
         th, td {
             text-align: left;
-            padding: 1rem;
+            padding: 0.75rem 0.5rem;
             border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.85rem;
+        }
+        
+        td:first-child { 
+            max-width: 140px; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            white-space: nowrap;
         }
 
         th {
             color: var(--text-muted);
             font-weight: 500;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         tr:hover {
@@ -91,15 +102,29 @@
         }
 
         .badge {
-            padding: 0.3rem 0.6rem;
-            border-radius: 0.5rem;
-            font-size: 0.85rem;
-            font-weight: bold;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.4rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+            white-space: nowrap;
         }
 
         .b-segue { background-color: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
         .b-nao-segue { background-color: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
         .b-erro { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+        .b-direita { background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .b-esquerda { background-color: rgba(220, 38, 38, 0.2); color: #f87171; border: 1px solid rgba(220, 38, 38, 0.3); }
+        .b-centro { background-color: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+        .b-indefinido { background-color: rgba(148, 163, 184, 0.2); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); }
+        
+        .b-feminino { background-color: #fca5a5; color: #7f1d1d; border: 1px solid #f87171; }
+        .b-masculino { background-color: #bae6fd; color: #075985; border: 1px solid #7dd3fc; }
+        .b-nao-ident { background-color: #fde68a; color: #92400e; border: 1px solid #fcd34d; }
+        .b-empresa { background-color: #e5e7eb; color: #374151; border: 1px solid #d1d5db; }
+
+        .b-aguarde { background-color: rgba(255, 255, 255, 0.05); color: #94a3b8; border: 1px dashed rgba(255, 255, 255, 0.2); }
 
         .acoes {
             display: flex;
@@ -183,13 +208,16 @@
             <thead>
                 <tr>
                     <th>Conta Verificada</th>
-                    <th>Classificação</th>
+                    <th>Status: Segue o Alvo?</th>
+                    <th>Tendência Política</th>
+                    <th>Gênero/Tipo</th>
+                    <th>Localização</th>
                 </tr>
             </thead>
             <tbody id="listaResultados">
                 <!-- Skeletons -->
-                <tr><td colspan="2"><div class="skeleton"></div></td></tr>
-                <tr><td colspan="2"><div class="skeleton"></div></td></tr>
+                <tr><td colspan="5"><div class="skeleton"></div></td></tr>
+                <tr><td colspan="5"><div class="skeleton"></div></td></tr>
             </tbody>
         </table>
 
@@ -264,7 +292,21 @@
         function getBadgeClass(classif) {
             if (classif === "SEGUE") return "b-segue";
             if (classif === "NÃO SEGUE") return "b-nao-segue";
-            return "b-erro";
+            if (classif === "DIREITA") return "b-direita";
+            if (classif === "ESQUERDA") return "b-esquerda";
+            if (classif === "CENTRO") return "b-centro";
+            if (classif === "INDEFINIDO") return "b-indefinido";
+            
+            if (classif === "FEMININO") return "b-feminino";
+            if (classif === "MASCULINO") return "b-masculino";
+            if (classif === "Não identificado") return "b-nao-ident";
+            if (classif === "Empresa") return "b-empresa";
+
+            if (classif === "AGUARDANDO" || classif === "..." || classif === "-") return "b-aguarde";
+            if (classif === "INEXISTENTE" || classif === "PRIVADA" || classif === "ERRO") return "b-erro";
+            
+            // Fallback para localização ou textos livres
+            return "b-indefinido";
         }
 
         function renderizarTabela(job) {
@@ -277,12 +319,31 @@
 
             listaResultados.innerHTML = "";
             let html = "";
-            job.resultados.forEach(resCru => {
-                const item = parseResultado(resCru);
+            job.resultados.forEach(res => {
+                // Suporte condicional se for objeto novo ou string antiga
+                let user = "", cSegue = "", cPol = "", cGen = "", cLoc = "";
+                if (typeof res === "object") {
+                    user = res.user;
+                    cSegue = res.classSegue;
+                    cPol = res.classPolitica;
+                    cGen = res.classGenero || "-";
+                    cLoc = res.localizacao || "-";
+                } else {
+                    const parsed = parseResultado(res);
+                    user = parsed.user;
+                    cSegue = parsed.class;
+                    cPol = "-";
+                    cGen = "-";
+                    cLoc = "-";
+                }
+
                 html += `
                     <tr>
-                        <td style="font-weight: 500;">${item.user}</td>
-                        <td><span class="badge ${getBadgeClass(item.class)}">${item.class}</span></td>
+                        <td style="font-weight: 500;">${user}</td>
+                        <td><span class="badge ${getBadgeClass(cSegue)}">${cSegue}</span></td>
+                        <td><span class="badge ${getBadgeClass(cPol)}">${cPol}</span></td>
+                        <td><span class="badge ${getBadgeClass(cGen)}">${cGen}</span></td>
+                        <td><span class="badge ${getBadgeClass(cLoc)}">${cLoc}</span></td>
                     </tr>
                 `;
             });
@@ -291,24 +352,25 @@
 
         function copiarApenasClassificacoes() {
             if (!jobAtual || !jobAtual.resultados) return;
-            const classificacoes = jobAtual.resultados.map(resCru => {
-                const item = parseResultado(resCru);
-                return item.class;
+            const classificacoes = jobAtual.resultados.map(res => {
+                if (typeof res === "object") return `${res.classSegue}\t${res.classPolitica}\t${res.classGenero || "-"}\t${res.localizacao || "-"}`;
+                return parseResultado(res).class;
             }).join("\n");
 
             navigator.clipboard.writeText(classificacoes);
-            alert("Coluna de Classificações copiada! Pode colar no Excel.");
+            alert("Colunas de Classificações copiadas (Segue | Política | Gênero | Local)! Pode colar no Excel.");
         }
 
         function copiarTudo() {
             if (!jobAtual || !jobAtual.resultados) return;
-            const tabelaCompleta = jobAtual.resultados.map(resCru => {
-                const item = parseResultado(resCru);
-                return `${item.user}\t${item.class}`; // Separa por TAB pro excel dividir nas colunas
+            const tabelaCompleta = jobAtual.resultados.map(res => {
+                if (typeof res === "object") return `${res.user}\t${res.classSegue}\t${res.classPolitica}\t${res.classGenero || "-"}\t${res.localizacao || "-"}`;
+                const item = parseResultado(res);
+                return `${item.user}\t${item.class}\t-\t-\t-`; 
             }).join("\n");
 
             navigator.clipboard.writeText(tabelaCompleta);
-            alert("Tabela completa copiada! Cole no Excel (1ª Coluna: Perfil / 2ª: Classificação)");
+            alert("Tabela completa copiada! Cole no Excel (1ª: Perfil / 2ª: Segue / 3ª: Política / 4ª: Gênero / 5ª: Local)");
         }
 
     </script>

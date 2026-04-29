@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Controle - Instagram Analyzer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --bg-color: #0f1016;
+            --surface-color: #1a1c23;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --error: #ef4444;
+            --border: rgba(255,255,255,0.08);
+            --focus-ring: rgba(99, 102, 241, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-image: radial-gradient(circle at top, #1e212b 0%, var(--bg-color) 70%);
+            padding: 2rem;
+        }
+
+        .container {
+            background-color: var(--surface-color);
+            padding: 2.5rem;
+            border-radius: 1.25rem;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Ambient glow */
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -100px;
+            left: -100px;
+            width: 200px;
+            height: 200px;
+            background: var(--primary);
+            filter: blur(120px);
+            opacity: 0.3;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #c084fc, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+            margin-bottom: 2rem;
+            font-weight: 300;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #cbd5e1;
+        }
+
+        textarea, input[type="text"] {
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        textarea:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--focus-ring);
+            background-color: rgba(99, 102, 241, 0.05);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+            line-height: 1.5;
+        }
+
+        textarea::placeholder, input::placeholder {
+            color: #475569;
+        }
+
+        .tipo-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        #cardAmbas {
+            grid-column: span 2;
+        }
+
+        .radio-card {
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .radio-card input[type="radio"] {
+            display: none;
+        }
+
+        .radio-card .icon {
+            font-size: 2rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .radio-card .title {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .radio-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.3;
+        }
+
+        .radio-card:hover {
+            border-color: rgba(255,255,255,0.2);
+            background-color: rgba(255,255,255,0.02);
+            transform: translateY(-2px);
+        }
+
+        /* Estado Selecionado */
+        .radio-card.active {
+            border-color: var(--primary);
+            background: linear-gradient(to bottom right, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.02));
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);
+        }
+
+        .radio-card.active::before {
+            content: '✓';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .alvo-container {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 100px;
+            opacity: 1;
+            overflow: hidden;
+        }
+
+        .alvo-container.hidden {
+            max-height: 0;
+            opacity: 0;
+            margin-bottom: 0;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 1.2rem;
+            border: none;
+            border-radius: 0.75rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, var(--primary), #818cf8);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+            background: linear-gradient(135deg, var(--primary-hover), #6366f1);
+        }
+
+        .btn-submit:active {
+            transform: translateY(1px);
+        }
+
+        .btn-submit:disabled {
+            background: #334155;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.7;
+        }
+
+        .loader {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-msg {
+            display: none;
+            background-color: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid var(--error);
+            color: #fca5a5;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Nova Análise</h1>
+        <p class="subtitle">Insira o Perfil Alvo e a lista de contas. O sistema fará a análise de <b style="color:var(--primary);">Seguidores e Política</b> simultaneamente.</p>
+
+        <div id="errorBox" class="error-msg"></div>
+
+
+
+        <div class="form-group alvo-container" id="alvoGroup">
+            <label for="alvo">Perfil Alvo <span style="color:var(--text-muted);font-weight:normal;font-size:0.85rem;">(Quem eles deveriam seguir)</span></label>
+            <input type="text" id="alvo" placeholder="Ex: @jairmessiasbolsonaro">
+        </div>
+
+        <div class="form-group">
+            <label for="apiKeyGPT">Chave API OpenAI (GPT) <span style="color:var(--text-muted);font-weight:normal;font-size:0.85rem;">(Opcional: Necessário para Gênero e Localização IA)</span></label>
+            <input type="password" id="apiKeyGPT" placeholder="Ex: sk-proj-...">
+        </div>
+
+        <div class="form-group">
+            <label for="contas">Lista de Contas (@s)</label>
+            <textarea id="contas" placeholder="Insira os perfis aqui...&#10;@usuario1&#10;@usuario2&#10;@usuario3"></textarea>
+            <p style="font-size: 0.8rem; color: #64748b; margin-top: 0.4rem;">Use quebras de linha ou vírgulas para separar as contas.</p>
+        </div>
+
+        <button class="btn-submit" style="background: linear-gradient(135deg, #10b981, #059669); margin-bottom: 1rem;" onclick="abrirLogin()">
+            <span id="btnLoginText">🔑 Conectar Conta do Instagram</span>
+        </button>
+
+        <button class="btn-submit" id="btnSubmit" onclick="iniciar()">
+            <span class="loader" id="loader"></span>
+            <span id="btnText">🚀 Iniciar Processamento</span>
+        </button>
+    </div>
+
+    <script>
+        // Restaura a chave da API ao carregar a página
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedKey = localStorage.getItem('gptApiKey');
+            if(savedKey) document.getElementById('apiKeyGPT').value = savedKey;
+        });
+
+        async function abrirLogin() {
+            const btn = document.getElementById('btnLoginText');
+            btn.innerText = "⏳ Abrindo Navegador...";
+            try {
+                await fetch('http://localhost:3000/api/login');
+                btn.innerText = "✔️ Janela Aberta! (Logue e Feche)";
+                setTimeout(() => btn.innerText = "🔑 Conectar Conta do Instagram", 6000);
+            } catch(e) {
+                alert("Erro ao tentar abrir login.");
+                btn.innerText = "🔑 Conectar Conta do Instagram";
+            }
+        }
+        function toggleAlvo(radio) {
+            const cardVerifica = document.getElementById('cardVerifica');
+            const cardPolitica = document.getElementById('cardPolitica');
+            const cardAmbas = document.getElementById('cardAmbas');
+            const alvoGroup = document.getElementById('alvoGroup');
+
+            cardVerifica.classList.remove('active');
+            cardPolitica.classList.remove('active');
+            cardAmbas.classList.remove('active');
+
+            if (radio.value === 'seguidores') {
+                cardVerifica.classList.add('active');
+                alvoGroup.classList.remove('hidden');
+            } else if (radio.value === 'politica') {
+                cardPolitica.classList.add('active');
+                alvoGroup.classList.add('hidden');
+            } else if (radio.value === 'ambas') {
+                cardAmbas.classList.add('active');
+                alvoGroup.classList.remove('hidden');
+            }
+        }
+
+        async function iniciar() {
+            const errorBox = document.getElementById('errorBox');
+            errorBox.style.display = 'none';
+
+            const tipoAnalise = 'ambas'; // Forçado para sempre realizar as 2 integrações
+            const textContas = document.getElementById('contas').value;
+            const alvo = document.getElementById('alvo').value;
+            const apiKeyGPT = document.getElementById('apiKeyGPT').value.trim();
+
+            if (apiKeyGPT) {
+                localStorage.setItem('gptApiKey', apiKeyGPT);
+            } else {
+                localStorage.removeItem('gptApiKey');
+            }
+
+            // Extrair array de contas (separa por quebra de linha para manter a exata ordem do Excel)
+            let contasLimposRaw = textContas.split(/\r?\n/);
+            
+            // Removemos apenas linhas vazias sobrando no final do texto para não gerar lixo a toa
+            while(contasLimposRaw.length > 0 && contasLimposRaw[contasLimposRaw.length - 1].trim() === '') {
+                contasLimposRaw.pop();
+            }
+
+            let contasLimpo = contasLimposRaw.map(c => c.trim());
+
+            if (contasLimpo.length === 0 || contasLimpo.every(c => c === '')) {
+                mostrarErro("Por favor, insira pelo menos um perfil na lista.");
+                return;
+            }
+
+            let endpoint = '';
+            let payload = {};
+            let urlRedirect = '';
+
+            if (tipoAnalise === 'seguidores' || tipoAnalise === 'ambas') {
+                if (!alvo || alvo.trim() === '') {
+                    mostrarErro("O Perfil Alvo é obrigatório para esta verificação.");
+                    return;
+                }
+                endpoint = 'http://localhost:3000/api/iniciar';
+                payload = { contas: contasLimpo, alvo: alvo.trim(), tipoAnalise: tipoAnalise, apiKey: apiKeyGPT };
+                urlRedirect = 'resultados.html'; // Fica na raiz
+            } else {
+                endpoint = 'http://localhost:3001/api/classificar';
+                payload = { contas: contasLimpo };
+                urlRedirect = 'projeto-classificador/resultados.html'; // Fica na subpasta
+            }
+
+            travarBotao(true);
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.erro || "Erro desconhecido ao comunicar com a API.");
+                }
+
+                // Redireciona para a tela de acompanhamento correta!
+                if(data.id_protocolo) {
+                    window.location.href = `${urlRedirect}?id=${data.id_protocolo}`;
+                } else {
+                    throw new Error("API não retornou um ID de protocolo válido.");
+                }
+
+            } catch (err) {
+                mostrarErro("Falha na conexão: " + err.message + "\n(Certifique-se de que os servidores Node.js estão rodando!)");
+                travarBotao(false);
+            }
+        }
+
+        function mostrarErro(msg) {
+            const errorBox = document.getElementById('errorBox');
+            errorBox.innerText = msg;
+            errorBox.style.display = 'block';
+        }
+
+        function travarBotao(travar) {
+            const btn = document.getElementById('btnSubmit');
+            const loader = document.getElementById('loader');
+            const btnText = document.getElementById('btnText');
+
+            if (travar) {
+                btn.disabled = true;
+                loader.style.display = 'inline-block';
+                btnText.innerText = 'Conectando ao Motor...';
+            } else {
+                btn.disabled = false;
+                loader.style.display = 'none';
+                btnText.innerText = '🚀 Iniciar Processamento';
+            }
+        }
+    </script>
+</body>
+</html>
